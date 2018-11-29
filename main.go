@@ -39,11 +39,12 @@ func main() {
 }
 
 func GetTime(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, `{
     "hostname": "%s",
     "ok": true,
-	"quote": "%s",
-	"time": "%s",
-	"version": "2.0"
+    "quote": "%s",
+    "time": "%s",
+    "version": "2.0"
 }`, hostname, quotes[rand.Intn(len(quotes))], time.Now().Format(time.RFC3339))
 }
