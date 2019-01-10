@@ -12,7 +12,7 @@ COPY ./go.mod ./go.sum ./
 RUN go mod download
 
 COPY . /go/src/github.com/kubesail/qotm
-RUN go build -a -installsuffix cgo -ldflags '-s' -o ./bin/qotm .
+RUN go build -installsuffix cgo -ldflags '-s' -o ./bin/qotm .
 
 FROM alpine:${ALPINE_VERSION}
 
