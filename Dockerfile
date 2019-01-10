@@ -1,14 +1,28 @@
-FROM golang:1.11 AS builder
+ARG GO_VERSION=1.11
+ARG ALPINE_VERSION=3.8
 
-# # Download and install the latest release of dep
-# ADD https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64 /usr/bin/dep
-# RUN chmod +x /usr/bin/dep
+FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS builder
+RUN apk add --no-cache git ca-certificates
 
-# Copy the code from the host and compile it
-WORKDIR $GOPATH/src/github.com/kubesail/qotm
-COPY . ./
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix nocgo -o /app .
+ENV CGO_ENABLED=0 GO111MODULE=on
 
-FROM scratch
-COPY --from=builder /app ./
-ENTRYPOINT ["./app"]
+WORKDIR /go/src/github.com/kubesail/qotm
+
+COPY ./go.mod ./go.sum ./
+RUN go mod download
+
+COPY . /go/src/github.com/kubesail/qotm
+RUN go build -a -installsuffix cgo -ldflags '-s' -o ./bin/qotm .
+
+FROM alpine:${ALPINE_VERSION}
+
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=builder /go/src/github.com/kubesail/qotm/bin/qotm ./qotm
+COPY --from=builder /go/src/github.com/kubesail/qotm/favicon.ico ./favicon.ico
+
+RUN addgroup -S kubesail && adduser -S -G kubesail kubesail && chown -R kubesail:kubesail ./qotm
+USER kubesail
+
+EXPOSE 8080
+
+CMD ["./qotm"]
